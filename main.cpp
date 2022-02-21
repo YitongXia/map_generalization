@@ -9,7 +9,7 @@
 
 int main(int argc, const char * argv[]) {
 
-    std::string file_in = "./cube.txt";
+    std::string file_in = "./cube.obj";
     std::ifstream ifs;
     ifs.open(file_in);
 
@@ -19,6 +19,7 @@ int main(int argc, const char * argv[]) {
     std::vector<Vertex> vertices;
     std::vector<Face> faces;
     int vertices_id = 1;
+    int face_id=1;
     if (ifs.is_open()) {
         std::string line;
         while (getline(ifs, line)) {
@@ -29,27 +30,20 @@ int main(int argc, const char * argv[]) {
                 std::vector<float> coordinates;
                 while (iss >> word) coordinates.push_back(std::stof(word));
                 if (coordinates.size() == 3) vertices.emplace_back(coordinates[0], coordinates[1], coordinates[2],vertices_id);
-                else vertices.push_back(Vertex());
+                else vertices.emplace_back();
                 vertices_id++;
             }
             else if (word == "f") {
                 std::vector<int> face;
                 while(iss>>word) face.push_back(std::stof(word));
-                if (face.size()==4) faces.emplace_back(vertices[face[0]-1].point,vertices[face[1]-1].point,vertices[face[2]-1].point,vertices[face[3]-1].point);
-
-                else faces.push_back(Face());
+                if (face.size()==4) {
+                    faces.emplace_back( face, vertices,face_id);
+                    face_id++;
+                }
+                else faces.emplace_back();
             }
         }
     }
-    for (int i = 0; i < faces.size(); ++i) {
-        faces[i].face_ver.print();
-    }
-    for (int i = 0; i < faces.size(); ++i) {
-        faces[i]
-    }
-
-
-
     // ## Construct generalised map using the structures from Gmap.h ##
 
     // ## Output generalised map to CSV ##
