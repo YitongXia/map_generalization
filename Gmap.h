@@ -30,23 +30,7 @@ Then you could create and link Darts like:
   dart_a->a0 = dart_b;
 */
 
-class Dart {
 
-public:
-    int dart_id;
-    Dart* a0 = nullptr;
-    Dart* a1= nullptr;
-    Dart* a2= nullptr;
-    Dart* a3= nullptr;
-
-    Vertex * vertex;
-    Edge * edge;
-    Face * face;
-
-    Dart():dart_id(0)
-    {}
-
-};
 
 class Vertex {
 public:
@@ -121,6 +105,33 @@ public:
 
 };
 
+
+class Dart {
+public:
+    int dart_id;
+    int belonged_face;
+    Dart* a0 = nullptr;
+    Dart* a1= nullptr;
+    Dart* a2= nullptr;
+    Dart* a3= nullptr;
+
+    Vertex * vertex;
+    Edge * edge;
+    Face * face;
+
+    Dart(int i):dart_id(i)
+    {}
+
+    Dart(int id, Vertex & current_vertex, Edge & current_edge, Face & current_face)
+    {
+        dart_id=id;
+        vertex = & current_vertex;
+        edge= & current_edge;
+        face = & current_face;
+    }
+
+};
+
 class GeneralizedMap{
     static std::vector<Face> find_incident_face(const Face& current_face,const std::vector<Face>& faces)
     {
@@ -139,15 +150,90 @@ class GeneralizedMap{
         return incident_face;
     }
 
-    static std::vector<Edge> find_incident_edge()
+    // create darts, fill the vertex, edge and the face of each dart.
+    // return a vector of darts.
+    static std::vector<Dart *> build_darts(std::vector<Face>& faces)
     {
-
+        std::vector<Dart *> darts;
+        std::vector<std::vector<Dart *> > darts_list;
+        // the number of darts in each face is vertices.size()*2 ?
+        for (auto & face : faces) {
+            int count=0;
+            for (int i = 0; i < face.vertex_id.size(); ++i) {
+                if (i == 0) {
+                    Dart * dart_1 =  new Dart(count, face.vertex_coord[i], face.edge_list[(face.edge_list.size()) - 1], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
+                    darts.emplace_back(dart_1);
+                    darts.emplace_back(dart_2);
+                }
+                else {
+                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i+1], face);
+                    darts.emplace_back(dart_1);
+                    darts.emplace_back(dart_2);
+                }
+                count+=2;
+            }
+            darts_list.emplace_back(darts);
+        }
+        return darts;
     }
 
-    static void build_darts(std::vector<Face>& faces)
-    {
-        for (int i = 0; i < faces.size(); ++i) {
 
+    // second way to store darts. vectors for every face stored in a single vector.
+    // return a std::vector<std::vector<Dart>>.
+    static std::vector<std::vector<Dart *>> build_darts_2(std::vector<Face>& faces)
+    {
+        std::vector<std::vector<Dart *>> darts_list;
+        // the number of darts in each face is vertices.size()*2 ?
+        for (auto & face : faces) {
+            int count=0;
+            std::vector<Dart *> darts;
+            for (int i = 0; i < face.vertex_id.size(); ++i) {
+
+                if (i == 0) {
+                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[(face.edge_list.size())-1], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
+                    darts.emplace_back(dart_1);
+                    darts.emplace_back(dart_2);
+                }
+                else {
+                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i+1], face);
+                    darts.emplace_back(dart_1);
+                    darts.emplace_back(dart_2);
+                }
+                count+=2;
+            }
+            darts_list.emplace_back(darts);
+        }
+        return darts_list;
+    }
+
+    /*
+    // compute a0, a1, a2 for each dart.
+    static void involutions(std::vector<Dart> & darts,std::vector<Face>& faces)
+    {
+        for (int i = 0; i < darts.size(); ++i) {
+            // a1
         }
     }
+    */
+
+    static std::vector<std::vector<Dart>> involutions(std::vector<std::vector<Dart>> & darts_list)
+    {
+        for(auto &darts:darts_list){
+            for (int i = 0; i < darts.size(); ++i) {
+                for (int j = 0; j < darts.size(); ++j) {
+                    if (darts[j].edge == darts[i].edge && darts[j].dart_id != darts[i].dart_id)
+                        darts[i].a0= & darts[j];
+                    
+                }
+
+            }
+        }
+
+        return darts_list;
+    }
+
 };
