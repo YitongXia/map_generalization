@@ -1,6 +1,3 @@
-
-   #pragma once
-
 #include "Point.h"
 
 class Point;
@@ -22,10 +19,8 @@ One way to do this is by using pointers. eg. define a member on the dart struct 
     // ...
     // cells:
     // ...
-
   };
 Then you could create and link Darts like:
-
   Dart* dart_a = new Dart();
   Dart* dart_b = new Dart();
   dart_a->a0 = dart_b;
@@ -77,11 +72,13 @@ public:
     Face(std::vector<int> & face, std::vector<Vertex> & vertices, int id)
     {
         face_id=id;
-        for (int i = 0; i < face.size(); ++i) {
+        for (int i = 0; i < face.size(); i++) {
             vertex_coord.emplace_back(vertices[face[i]]);
             vertex_id.emplace_back(vertices[face[i]].vertex_id);
-            if(i<face.size()-1) edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[i+1]].vertex_id,i+1);
-            else edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[0]].vertex_id,i+1);
+
+            if(i<face.size()-1) edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[i+1]].vertex_id,i);
+            // in this case when i==3
+            else if (i == face.size()-1) edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[0]].vertex_id,i);
         }
     }
     Face():face_id(0)
@@ -134,7 +131,7 @@ public:
 };
 
 class GeneralizedMap{
-
+public:
     static Dart * find_a2_dart(Dart * current_dart,std::vector<std::vector<Dart *>> darts_list)
     {
         Dart * incident;
@@ -149,7 +146,7 @@ class GeneralizedMap{
 
     // create darts, fill the vertex, edge and the face of each dart.
     // return a vector of darts.
-    static std::vector<Dart *> build_darts(std::vector<Face>& faces)
+    static std::vector<Dart *> build_darts_1(std::vector<Face>& faces)
     {
         std::vector<Dart *> darts;
         std::vector<std::vector<Dart *> > darts_list;
@@ -158,14 +155,16 @@ class GeneralizedMap{
             int count=0;
             for (int i = 0; i < face.vertex_id.size(); ++i) {
                 if (i == 0) {
+                    // Dart(int id, Vertex & current_vertex, Edge & current_edge, Face & current_face)
+                    // something wrong with edges.
                     Dart * dart_1 =  new Dart(count, face.vertex_coord[i], face.edge_list[(face.edge_list.size()) - 1], face);
                     Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
                     darts.emplace_back(dart_1);
                     darts.emplace_back(dart_2);
                 }
                 else {
-                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i], face);
-                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i+1], face);
+                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i-1], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
                     darts.emplace_back(dart_1);
                     darts.emplace_back(dart_2);
                 }
@@ -179,7 +178,7 @@ class GeneralizedMap{
 
     // second way to store darts. vectors for every face stored in a single vector.
     // return a std::vector<std::vector<Dart>>.
-    static std::vector<std::vector<Dart *>> build_darts_2(std::vector<Face>& faces)
+    static std::vector<std::vector<Dart *>> build_darts(std::vector<Face>& faces)
     {
         std::vector<std::vector<Dart *>> darts_list;
         // the number of darts in each face is vertices.size()*2 ?
