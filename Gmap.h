@@ -1,4 +1,5 @@
-#pragma once
+
+   #pragma once
 
 #include "Point.h"
 
@@ -133,21 +134,17 @@ public:
 };
 
 class GeneralizedMap{
-    static std::vector<Face> find_incident_face(const Face& current_face,const std::vector<Face>& faces)
+
+    static Dart * find_a2_dart(Dart * current_dart,std::vector<std::vector<Dart *>> darts_list)
     {
-        std::vector<Face> incident_face;
-        for (auto i : current_face.edge_list) {
-            int start=i.edge_start;
-            int end=i.edge_end;
-            for (const auto & face : faces) {
-                std::vector<Edge> temp=face.edge_list;
-                for (auto & k : temp) {
-                    if (k.edge_start==end && k.edge_end==start)
-                        incident_face.emplace_back(face);
-                }
+        Dart * incident;
+        for(const auto& darts :darts_list){
+            for (auto dart:darts) {
+                if(dart->vertex == current_dart->vertex && dart->edge == current_dart->edge && dart->face != current_dart->face )
+                    incident=dart;
             }
         }
-        return incident_face;
+        return incident;
     }
 
     // create darts, fill the vertex, edge and the face of each dart.
@@ -195,44 +192,35 @@ class GeneralizedMap{
                     Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[(face.edge_list.size())-1], face);
                     Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
                     darts.emplace_back(dart_1);
-                    darts.emplace_back(dart_2);
-                }
+                    darts.emplace_back(dart_2);}
                 else {
                     Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i], face);
                     Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i+1], face);
                     darts.emplace_back(dart_1);
-                    darts.emplace_back(dart_2);
-                }
-                count+=2;
-            }
-            darts_list.emplace_back(darts);
-        }
+                    darts.emplace_back(dart_2);}
+                count+=2;}
+            darts_list.emplace_back(darts);}
         return darts_list;
     }
 
-    /*
-    // compute a0, a1, a2 for each dart.
-    static void involutions(std::vector<Dart> & darts,std::vector<Face>& faces)
-    {
-        for (int i = 0; i < darts.size(); ++i) {
-            // a1
-        }
-    }
-    */
-
-    static std::vector<std::vector<Dart>> involutions(std::vector<std::vector<Dart>> & darts_list)
-    {
+    static std::vector<std::vector<Dart *>> involutions(std::vector<std::vector<Dart *>> & darts_list, std::vector<Face> & faces) {
         for(auto &darts:darts_list){
             for (int i = 0; i < darts.size(); ++i) {
+                // in a single face (because a0 and a1 are in the same face
                 for (int j = 0; j < darts.size(); ++j) {
-                    if (darts[j].edge == darts[i].edge && darts[j].dart_id != darts[i].dart_id)
-                        darts[i].a0= & darts[j];
-                    
-                }
-
+                    // a0
+                    if ( darts[j]->edge ==  darts[i]->edge && darts[j]->dart_id != darts[i]->dart_id)
+                        darts[i]->a0= darts[j];
+                    // a1
+                    if(darts[j]->vertex ==  darts[i]->vertex && darts[j]->edge != darts[i]->edge)
+                        darts[i]->a1 = darts[j];}
             }
         }
-
+        for (const auto& darts :darts_list) {
+            for (auto dart : darts) {
+                dart->a3=find_a2_dart(dart,darts_list);
+            }
+        }
         return darts_list;
     }
 
