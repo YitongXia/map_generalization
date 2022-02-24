@@ -54,6 +54,14 @@ public:
     int edge_end;
     Edge(int a, int b,int c): edge_start(a),edge_end(b),edge_id(c)
     {}
+    bool operator==(const Edge& other) const
+    {
+        return edge_start == other.edge_end && edge_end == other.edge_start;
+    }
+    bool operator !=(const Edge& other) const
+    {
+        return edge_start != other.edge_end && edge_end != other.edge_start;
+    }
     // a dart incident to this Edge:
 
     // function to compute the barycenter for this Edge (needed for triangulation output):
@@ -69,16 +77,25 @@ public:
     std::vector<Edge> edge_list;
     Dart * incident_dart;
     Point barycenter;
-    Face(std::vector<int> & face, std::vector<Vertex> & vertices, int id)
+    Face(std::vector<int> & face, std::vector<Edge> & single_edge_list ,std::vector<Vertex> & vertices,int id)
     {
         face_id=id;
         for (int i = 0; i < face.size(); i++) {
-            vertex_coord.emplace_back(vertices[face[i]]);
-            vertex_id.emplace_back(vertices[face[i]].vertex_id);
+            vertex_coord.emplace_back(vertices[face[i]-1]);
+            vertex_id.emplace_back(face[i]);
+            if(i<face.size()-1) {
+                for (auto edge:single_edge_list) {
+                    if((face[i]==edge.edge_start&&face[i+1]==edge.edge_end)||(face[i]==edge.edge_end && face[i+1]==edge.edge_start))
+                        edge_list.emplace_back(edge);
+                }
+            }
+            else if(i == face.size()-1) {
+                for (auto edge:single_edge_list) {
+                    if((face[i]==edge.edge_start&&face[0]==edge.edge_end)||(face[i]==edge.edge_end && face[0]==edge.edge_start))
+                        edge_list.emplace_back(edge);
+                }
+            }
 
-            if(i<face.size()-1) edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[i+1]].vertex_id,i);
-            // in this case when i==3
-            else if (i == face.size()-1) edge_list.emplace_back(vertices[face[i]].vertex_id,vertices[face[0]].vertex_id,i);
         }
     }
     Face():face_id(0)
@@ -132,13 +149,72 @@ public:
 
 class GeneralizedMap{
 public:
+
+    static std::vector<Edge> create_edges(std::vector<int> &face)
+    {
+        std::vector<Edge> edges;
+        for (int i = 0; i < face.size(); i++) {
+            if(i<face.size()-1) edges.emplace_back(face[i],face[i+1],i);
+                // in this case when i==3
+            else if (i == face.size()-1) edges.emplace_back(face[i],face[0],i);
+        }
+        return edges;
+    }
+
+    static std::vector<Edge> build_single_edges(const std::vector<std::vector<Edge>> edge_list) {
+
+        std::vector<Edge> result_edge;
+        for (int i = 0; i < edge_list.size(); ++i) {
+            for (int j = 0; j < edge_list[i].size(); ++j) {
+                if (result_edge.empty()) result_edge.emplace_back(edge_list[i][j]);
+                else
+                {
+                    int size=result_edge.size();
+                    bool same= true;
+                    for (int k = 0; k < size; ++k) {
+                        if (result_edge[k].edge_start==edge_list[i][j].edge_end && result_edge[k].edge_end==edge_list[i][j].edge_start){
+                            same= false;
+                            continue;
+                        }
+                    }
+                    if(same) result_edge.emplace_back(edge_list[i][j]);
+                }
+            }
+        }
+        for (int i = 0; i < result_edge.size(); ++i) {result_edge[i].edge_id=i;}
+        return result_edge;
+    }
+
+    static std::vector<Edge> build_edges(std::vector<Face> & faces) {
+        std::vector<Edge> edges;
+        // std::vector<Edge> temp_edges=edges;
+        for(auto face:faces) {
+            for (int i = 0; i < face.edge_list.size(); ++i) {
+                if (edges.empty()) edges.emplace_back(face.edge_list[i]);
+                else{
+                    for(auto edge:edges) {
+                        if(face.edge_list[i]==edge) continue;
+                        else edges.emplace_back(face.edge_list[i]);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < edges.size(); ++i) {
+            edges[i].edge_id=i;
+        }
+        return edges;
+    }
+
     static Dart * find_a2_dart(Dart * current_dart,std::vector<std::vector<Dart *>> darts_list)
     {
         Dart * incident;
-        for(const auto& darts :darts_list){
-            for (auto dart:darts) {
-                if(dart->vertex == current_dart->vertex && dart->edge == current_dart->edge && dart->face != current_dart->face )
-                    incident=dart;
+        for (int i = 0; i < darts_list.size(); ++i) {
+            if (i==current_dart->face->face_id) continue;
+            else {
+                for(auto dart:darts_list[i]) {
+                    if(dart->vertex->vertex_id == current_dart->vertex->vertex_id && dart->edge->edge_id == current_dart->edge->edge_id)
+                    {   incident = dart;}
+                }
             }
         }
         return incident;
@@ -182,8 +258,8 @@ public:
     {
         std::vector<std::vector<Dart *>> darts_list;
         // the number of darts in each face is vertices.size()*2 ?
+        int count=0;
         for (auto & face : faces) {
-            int count=0;
             std::vector<Dart *> darts;
             for (int i = 0; i < face.vertex_id.size(); ++i) {
 
@@ -193,8 +269,8 @@ public:
                     darts.emplace_back(dart_1);
                     darts.emplace_back(dart_2);}
                 else {
-                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i], face);
-                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i+1], face);
+                    Dart * dart_1 = new Dart(count, face.vertex_coord[i], face.edge_list[i-1], face);
+                    Dart * dart_2 = new Dart(count+1, face.vertex_coord[i],face.edge_list[i], face);
                     darts.emplace_back(dart_1);
                     darts.emplace_back(dart_2);}
                 count+=2;}
@@ -203,24 +279,31 @@ public:
     }
 
     static std::vector<std::vector<Dart *>> involutions(std::vector<std::vector<Dart *>> & darts_list, std::vector<Face> & faces) {
-        for(auto &darts:darts_list){
+        for (auto &darts: darts_list) {
             for (int i = 0; i < darts.size(); ++i) {
                 // in a single face (because a0 and a1 are in the same face
                 for (int j = 0; j < darts.size(); ++j) {
                     // a0
-                    if ( darts[j]->edge ==  darts[i]->edge && darts[j]->dart_id != darts[i]->dart_id)
-                        darts[i]->a0= darts[j];
+                    if (darts[j]->edge == darts[i]->edge && darts[j]->dart_id != darts[i]->dart_id)
+                        darts[i]->a0 = darts[j];
                     // a1
-                    if(darts[j]->vertex ==  darts[i]->vertex && darts[j]->edge != darts[i]->edge)
-                        darts[i]->a1 = darts[j];}
+                    if (darts[j]->vertex == darts[i]->vertex && darts[j]->edge != darts[i]->edge)
+                        darts[i]->a1 = darts[j];
+                }
             }
         }
-        for (const auto& darts :darts_list) {
-            for (auto dart : darts) {
-                dart->a3=find_a2_dart(dart,darts_list);
+        for (const auto &darts: darts_list) {
+
+            for (auto dart: darts) {
+                dart->a2 = find_a2_dart(dart, darts_list);
             }
         }
         return darts_list;
     }
+};
 
+class WriteOBJ {
+    static void output_file(const std::vector<std::vector<Dart *>>&) {
+        
+    }
 };
