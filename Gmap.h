@@ -32,6 +32,7 @@ public:
     int edge_id;
     int edge_start;
     int edge_end;
+    int incident_dart;
     Edge(int a, int b,int c): edge_start(a),edge_end(b),edge_id(c)
     {}
     bool operator==(const Edge& other) const
@@ -75,10 +76,10 @@ public:
                         edge_list.emplace_back(edge);
                 }
             }
-
         }
         compute_barycenter();
     }
+
     Face():face_id(0)
     {}
 
@@ -134,14 +135,6 @@ public:
 
 class GeneralizedMap{
 public:
-    static void initialize_incident_dart(const std::vector<std::vector<Dart *>> & darts_list,std::vector<Face> & faces, std::vector<Edge> & edges, std::vector<Vertex> & vertices )
-    {
-        for(auto face : faces) {
-            for (auto darts:darts_list) {
-
-            }
-        }
-    }
 
     static std::vector<Edge> create_edges(std::vector<int> &face)
     {
@@ -194,9 +187,24 @@ public:
         return incident;
     }
 
+    static void edge_incident_dart(const std::vector<std::vector<Dart *>> &darts_list,std::vector<Edge> & edges) {
+        for(auto edge:edges) {
+            for(const auto& darts:darts_list){
+                for(auto dart:darts){
+                    if (edge.edge_id==dart->edge->edge_id)
+                    {
+                        edge.incident_dart=dart->dart_id;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     // second way to store darts. vectors for every face stored in a single vector.
     // return a std::vector<std::vector<Dart>>.
-    static std::vector<std::vector<Dart *>> build_darts(std::vector<Face>& faces, std::vector<Vertex> & vertices)
+    static std::vector<std::vector<Dart *>> build_darts(std::vector<Face>& faces, std::vector<Edge> & edges, std::vector<Vertex> & vertices)
     {
         std::vector<std::vector<Dart *>> darts_list;
         // the number of darts in each face is vertices.size()*2 ?
@@ -222,7 +230,9 @@ public:
                 count+=2;
             }
             face.incident_dart=vertices[face.vertex_id[0]].incident_dart;
-            darts_list.emplace_back(darts);}
+            darts_list.emplace_back(darts);
+        }
+        edge_incident_dart(darts_list,edges);
         return darts_list;
     }
 
