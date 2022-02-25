@@ -98,21 +98,17 @@ public:
         }
         barycenter = Vertex(x/vertex_coord.size(),y/vertex_coord.size(),z/vertex_coord.size(),0);
     }
-    // a dart incident to this Face:
-    // ...
-
-    // function to compute the barycenter for this Face (needed for triangulation output):
-    // Point barycenter() {}
 };
 
 class Volume {
 public:
     int volume_id;
+    Dart * incident_dart;
     // a dart incident to this Volume:
     // ...
-
+    Volume(int id):volume_id(id)
+    {}
 };
-
 
 class Dart {
 public:
@@ -128,7 +124,6 @@ public:
 
     Dart(int i):dart_id(i)
     {}
-
     Dart(int id, Vertex & current_vertex, Edge & current_edge, Face & current_face)
     {
         dart_id=id;
@@ -152,8 +147,9 @@ public:
         return edges;
     }
 
-    static std::vector<Edge> build_single_edges(const std::vector<std::vector<Edge>>& edge_list) {
-
+    // the function is to build the unordered map using ordered map.
+    static std::vector<Edge> build_single_edges(const std::vector<std::vector<Edge>>& edge_list) 
+    {
         std::vector<Edge> result_edge;
         for (const auto & i : edge_list) {
             for (auto j : i) {
@@ -176,6 +172,7 @@ public:
         return result_edge;
     }
 
+    // the function is to find a2 dart for every input dart
     static Dart * find_a2_dart(Dart * current_dart,std::vector<std::vector<Dart *>> darts_list)
     {
         Dart * incident;
@@ -191,7 +188,7 @@ public:
         return incident;
     }
 
-    // still need to modify
+    // the function is for find incident dart for each edge
     static void edge_incident_dart(const std::vector<std::vector<Dart *>> &darts_list,std::vector<Edge> & edges) {
         for(auto edge:edges) {
             for(const auto& darts:darts_list){
@@ -208,6 +205,7 @@ public:
     }
 
     // second way to store darts. vectors for every face stored in a single vector.
+    // also find incident dart for vertices and faces.
     // return a std::vector<std::vector<Dart>>.
     static std::vector<std::vector<Dart *>> build_darts(std::vector<Face>& faces, std::vector<Edge> & edges, std::vector<Vertex> & vertices)
     {
@@ -265,6 +263,8 @@ public:
     }
 };
 
+
+// the class Triangulation is for output triangulated darts file.
 class Triangulation{
 public:
     int p0;
@@ -272,7 +272,6 @@ public:
     int p2;
     Triangulation(int p_0,int p_1,int p_2):p0(p_0),p1(p_1),p2(p_2)
     {}
-
     static void dart_triangulation(const std::vector<std::vector<Dart *>>& darts_list, const std::vector<Face> & faces, const std::vector<Vertex> vertices,std::vector<Vertex> & vertex_list,std::vector<Triangulation> & face_list) {
         int count=0;
         Vertex d2,start,end,d1,d0;
@@ -324,7 +323,7 @@ public:
         }
     }
     static void output_obj(const std::vector<Vertex> & vertex_list,const std::vector<Triangulation> & face_list, const std::string& file_path) {
-        std::string filename=file_path+"/cube.obj";
+        std::string filename=file_path+"/result_cube.obj";
         std::ofstream output_file;
         output_file.open(filename, std::ios::out | std::ios::trunc);
         output_file << std::fixed;
@@ -332,15 +331,18 @@ public:
         for(const auto& vertex:vertex_list)
             output_file << "v "<<vertex.point.x<<";"<<" "<<";"<< vertex.point.y<<" " << vertex.point.z <<std::endl;
         for(const auto face:face_list)
-            output_file<<"f" <<face.p0<<" "<<face.p1<<" "<<face.p2<<std::endl;
+            output_file<<"f " <<face.p0<<" "<<face.p1<<" "<<face.p2<<std::endl;
         output_file.close();
     }
 };
 
+// the class to write the output csv file.
 class WriteCSV {
 public:
+    //the function to write dart.csv
+    // the output format: ID;a0;a1;a2;a3;v;e;f
     static void output_dart(const std::vector<std::vector<Dart *>>& darts_list, const std::string& file_path) {
-        std::string filename=file_path+"/involution.csv";
+        std::string filename=file_path+"/dart.csv";
         std::ofstream output_file;
         output_file.open(filename, std::ios::out | std::ios::trunc);
         output_file << std::fixed;
@@ -353,6 +355,9 @@ public:
         // close file
         output_file.close();
     }
+
+    //the function to write vertices.csv
+    // the output format: ID;dart;x;y;z.
     static void output_vertex(const std::vector<Vertex>& vertices, const std::string& file_path) {
         std::ofstream output_file;
         std::string filename=file_path+"/vertices.csv";
@@ -365,28 +370,33 @@ public:
         // close file
         output_file.close();
     }
-    static void output_edge(const std::vector<Vertex>& vertices, const std::string& file_path) {
+
+    //the function to write edges.csv
+    // the output format: ID;darts;start;end.
+    static void output_edge(const std::vector<Edge>& edges, const std::string& file_path) {
         std::ofstream output_file;
         std::string filename=file_path+"/edges.csv";
         output_file.open(filename, std::ios::out | std::ios::trunc);
         output_file << std::fixed;
-        output_file <<"ID;dart;x;y;z" << std::endl;
+        output_file <<"ID;dart;start;end" << std::endl;
         // print data into the file
-        for(const auto& ver:vertices)
-            output_file << ver.vertex_id<<";"<< ver.incident_dart->dart_id<<";"<< ver.point.x<<";"<< ver.point.y<<";" << ver.point.z<<std::endl;
+        for(const auto& edge:edges)
+            output_file <<edge.edge_id<<";"<<edge.incident_dart<<";"<< edge.edge_start<<";" << edge.edge_end<<std::endl;
         // close file
         output_file.close();
     }
 
-    static void output_face(const std::vector<Vertex>& vertices, const std::string& file_path) {
+    // the function to write volume.csv
+    // the output format: ID; dart
+    static void output_face(const std::vector<Volume>& volumes, const std::string& file_path) {
         std::ofstream output_file;
-        std::string filename=file_path+"/faces.csv";
+        std::string filename=file_path+"/volumes.csv";
         output_file.open(filename, std::ios::out | std::ios::trunc);
         output_file << std::fixed;
-        output_file <<"ID;dart;x;y;z" << std::endl;
+        output_file <<"ID;dart" << std::endl;
         // print data into the file
-        for(const auto& ver:vertices)
-            output_file << ver.vertex_id<<";"<< ver.incident_dart->dart_id<<";"<< ver.point.x<<";"<< ver.point.y<<";" << ver.point.z<<std::endl;
+        for(const auto& volume:volumes)
+            output_file <<volume.volume_id<<";" <<volume.incident_dart->dart_id<<std::endl;
         // close file
         output_file.close();
     }
