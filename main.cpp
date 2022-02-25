@@ -8,7 +8,7 @@
 
 int main(int argc, const char * argv[]) {
 
-    std::string file_in = "./cube.obj";
+    std::string file_in = "./cube.txt";
     std::ifstream ifs;
     ifs.open(file_in);
 
@@ -74,7 +74,14 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
-    WriteOBJ::output_dart(darts_list,".");
+
+    //still need to debug
+    std::vector<Vertex> vertex_list;
+    std::vector<Triangulation> triangulation_list;
+    Triangulation::dart_triangulation(darts_list,faces,vertices,vertex_list,triangulation_list);
+    Triangulation::output_obj(vertex_list,triangulation_list,"/");
+    
+    WriteCSV::output_dart(darts_list,".");
 
     // ## Construct generalised map using the structures from Gmap.h ##
 
