@@ -79,10 +79,11 @@ int main(int argc, const char * argv[]) {
     std::vector<Vertex> vertex_list;
     std::vector<Triangulation> triangulation_list;
     Triangulation::dart_triangulation(darts_list,faces,vertices,vertex_list,triangulation_list);
-    Triangulation::output_obj(vertex_list,triangulation_list,"/");
-    
-    WriteCSV::output_dart(darts_list,".");
+    Triangulation::output_obj(vertex_list,triangulation_list,".");
 
+    WriteCSV::output_dart(darts_list,".");
+    WriteCSV::output_edge(unordered_edges,".");
+    WriteCSV::output_vertex(vertices,".");
     // ## Construct generalised map using the structures from Gmap.h ##
 
     // ## Output generalised map to CSV ##
