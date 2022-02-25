@@ -52,7 +52,7 @@ int main(int argc, const char * argv[]) {
     for (int i = 0; i < face_list.size();++i)
         faces.emplace_back(face_list[i], result, vertices, i);
 
-    std::vector<std::vector<Dart *>> darts_list = GeneralizedMap::build_darts(faces);
+    std::vector<std::vector<Dart *>> darts_list = GeneralizedMap::build_darts(faces,vertices);
     darts_list = GeneralizedMap::involutions(darts_list,faces);
 
     for(const auto& darts:darts_list) {
@@ -69,7 +69,7 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
-
+    WriteOBJ::output_dart(darts_list,".");
 
     // ## Construct generalised map using the structures from Gmap.h ##
 
