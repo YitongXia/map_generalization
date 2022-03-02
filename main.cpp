@@ -8,10 +8,10 @@
 
 int main(int argc, const char * argv[]) {
 
-    std::string file_in = "./torus.obj";
+    std::string file_in = "/hw01/01/data/torus.obj";
     std::ifstream ifs;
     ifs.open(file_in);
-
+    std::cout<<ifs.is_open()<<std::endl;
     std::vector<Vertex> vertices; // vector to store all the vertices.
     std::vector<Face> faces; // vector to store all the faces
     std::vector<Edge> ordered_edges; // vector to store all the ordered edges (for unordered edges)
@@ -53,6 +53,7 @@ int main(int argc, const char * argv[]) {
 
     std::cout<<"creating face now.."<<std::endl;
 
+
     for (int i = 0; i < face_list.size();++i)
         faces.emplace_back(face_list[i], unordered_edges, vertices, i);
 
@@ -80,6 +81,13 @@ int main(int argc, const char * argv[]) {
     WriteCSV::output_volume(volumes,".");
 
     std::cout<<"output csv file completed"<<std::endl;
+    // ## Construct generalised map using the structures from Gmap.h ##
+
+    // ## Output generalised map to CSV ##
+
+    // ## Create triangles from the darts ##
+
+    // ## Write triangles to obj ##
 
     return 0;
 }
