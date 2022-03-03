@@ -21,8 +21,10 @@ the input data(obj file) contains:
 1. a single valid polygonal mesh (so only one volume)
 2. whose faces are all convex and contain no holes (Face normals are implicit from the vertex order. The orientation of the vertices of the faces in relation to the face normal follows the right-hand rule)
 
+the output OBJ file:
+ID; a0; a1; a2; a3; v; e; f
 
-the output files:
+the output CSV files:
 1. one CSV file for the darts (filename ends on darts.csv) with the columns ID, a0, a1, a2, a3, v, e, and f.
 2. one CSV file for the 0-cells (ending on vertices.csv) with  the columns ID, dart, x, y, and z.
 3. one CSV file for the 1-cells (ending on edges.csv) with the columns ID, dart.
